@@ -7,11 +7,31 @@ from face_pose_detection import init_yolo_models, get_face_crops
 from overlay_utils import draw_label
 from simple_tracker import SimpleTracker
 
+def list_available_cameras(max_tested=5):
+    available = []
+    for i in range(max_tested):
+        cap = cv2.VideoCapture(i)
+        if cap.isOpened():
+            print(f"Camera index {i} is available")
+            available.append(i)
+            cap.release()
+    if not available:
+        print("No cameras detected.")
+    return available
+
 
 def main():
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print(f"Using device: {device}")
+
+    cams = list_available_cameras()
+
+    print("\nSelect a camera index:")
+    for c in cams:
+        print(f"  {c}")
+
+    cam_index = int(input("Enter camera index: "))
 
     selection = int(input("Choose your HF token:\n1 = AA\n2 = AZ 1\n3 = KX\nEnter 1/2/3: "))
 
@@ -30,7 +50,7 @@ def main():
     # Slightly more smoothing and a bit more tolerant IoU matching
     tracker = SimpleTracker(iou_thresh=0.25, max_history=7, max_missing=8)
 
-    cap = cv2.VideoCapture(0)
+    cap = cv2.VideoCapture(cam_index)
 
     while True:
         ret, frame = cap.read()
