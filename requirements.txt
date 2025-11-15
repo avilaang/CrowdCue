@@ -1,0 +1,8 @@
+opencv-python
+torch
+transformers
+huggingface-hub
+accelerate
+python-dotenv
+ultralytics
+numpy
