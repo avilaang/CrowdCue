@@ -5,3 +5,15 @@ __pycache__/
 *.dylib
 *.pyc
 *.env
+
+# Model files (large, not needed in repo)
+*.pt
+*.pth
+
+# Cache and debug directories
+hf_cache/
+debug_crops/
+debug_crops_test/
+
+# OS
+.DS_Store
