@@ -4,4 +4,10 @@ __pycache__/
 *.so
 *.dylib
 *.pyc
-*.env
+*.envhf_cache/
+debug_crops/
+debug_crops_test/
+*.pt
+*.pth
+*.tar
+*.safetensors
