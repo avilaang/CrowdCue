@@ -16,11 +16,9 @@ def get_engagement_suggestions(slide_text: str):
     "{slide_text}"
 
     As an AI helper for a live presenter, provide:
-    - 2 short, relevant jokes
-    - 2 surprising statistics or facts
-    - 2 audience engagement ideas (questions, polls, etc.)
+    - 1 audience engagement ideas (questions, polls, short and relevant joke, a surprising statistic or fact)
 
-    Keep the suggestions concise and naturally speakable.
+    Keep the suggestions concise and naturally speakable. Do not include any additional headings.
     """
 
     response = model.generate_content(prompt)
