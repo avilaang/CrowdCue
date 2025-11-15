@@ -1,0 +1,12 @@
+venv/
+mp-env/
+__pycache__/
+*.so
+*.dylib
+*.pyc
+venv/
+mp-env/
+__pycache__/
+*.so
+*.dylib
+*.pyc
