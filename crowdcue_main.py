@@ -13,7 +13,7 @@ def main():
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print(f"Using device: {device}")
 
-    selection = int(input("Choose your HF token:\n1 = You\n2 = Friend 1\n3 = Friend 2\nEnter 1/2/3: "))
+    selection = int(input("Choose your HF token:\n1 = AA\n2 = AZ 1\n3 = KX\nEnter 1/2/3: "))
 
     # Ask whether to enable debug (prints top-3 and saves low-conf crops)
     dbg_input = input("Enable debug output and low-confidence crop saving? (y/N): ").strip().lower()

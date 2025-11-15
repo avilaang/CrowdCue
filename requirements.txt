@@ -8,3 +8,7 @@ numpy
 Pillow
 torch
 torchvision
+tk
+mss
+pytesseract
+google-generativeai
