@@ -1,31 +1,38 @@
-def combine_engagement(emotion_engagement, pose_state):
-    # Pose overrides emotion
-    if pose_state == "confused":
-        return "confused"
-    if pose_state == "looking away":
+def emotion_to_engagement(emotion):
+    emotion = emotion.lower()
+
+    if emotion in ["happy", "surprise"]:
+        return "engaged"
+
+    if emotion == "neutral":
+        return "neutral"
+
+    if emotion in ["sad", "angry", "disgust", "fear"]:
         return "bored"
-    return emotion_engagement
+
+    return "neutral"
 
 
-def suggestion_for(engagement):
-    if engagement == "engaged":
-        return "Continue 👍"
-    if engagement == "neutral":
-        return "Add example or statistic 📘"
-    if engagement == "bored":
-        return "Increase energy / tell a joke 🔥"
-    if engagement == "confused":
-        return "Clarify / Slow down ❓"
-    return ""
+# Per-class confidence thresholds — tuneable
+DEFAULT_CONF_THRESH = 0.45
+CLASS_CONF_THRESH = {
+    # give 'happy' a higher bar to avoid false positives
+    'happy': 0.60,
+    # neutral can be lower
+    'neutral': 0.25,
+}
 
 
-def color_for(engagement):
-    if engagement == "engaged":
-        return (0, 255, 0)     # green
-    if engagement == "neutral":
-        return (255, 255, 0)   # yellow
-    if engagement == "bored":
-        return (0, 140, 255)   # orange
-    if engagement == "confused":
-        return (0, 0, 255)     # red
-    return (255, 255, 255)
+def apply_conf_threshold(label, prob):
+    """Return (label, prob) after applying per-class thresholds.
+
+    If the prediction is below the class threshold, fallback to 'neutral'.
+    """
+    if label is None:
+        return 'neutral', 0.0
+
+    l = str(label).lower()
+    thresh = CLASS_CONF_THRESH.get(l, DEFAULT_CONF_THRESH)
+    if prob < thresh:
+        return 'neutral', prob
+    return l, prob

@@ -1,32 +1,23 @@
 from ultralytics import YOLO
-import cv2
+import numpy as np
 
-def main():
-    # Load the YOLOv8 pose model (pretrained, auto-downloads if needed)
-    model = YOLO("yolov8n-pose.pt")  # 'n' is nano, fast and good for demos
-    
-    cap = cv2.VideoCapture(0)  # Use webcam (or replace with video file path)
+def init_yolo_models():
+    face_model = YOLO("yolov8n.pt")          # face/general detector
+    pose_model = YOLO("yolov8n-pose.pt")     # keypoint model
+    return face_model, pose_model
 
-    while True:
-        success, frame = cap.read()
-        if not success:
-            break
-        
-        # Predict poses on the frame
-        results = model(frame)
-        
-        # results[0].plot() draws keypoints and connections on the frame, including face, hands, body
-        annotated_frame = results[0].plot()
-        
-        # Display
-        cv2.imshow("YOLOv8 Multi-Person Face + Pose Detection", annotated_frame)
-        
-        # Press ESC to exit
-        if cv2.waitKey(1) == 27:
-            break
 
-    cap.release()
-    cv2.destroyAllWindows()
+def get_face_crops(frame, face_model):
+    """Returns list of cropped faces from YOLO detection."""
+    detections = face_model(frame)[0]
+    boxes = detections.boxes.xyxy.cpu().numpy() if detections.boxes is not None else []
 
-if __name__ == "__main__":
-    main()
+    face_crops = []
+    out_boxes = []
+    for box in boxes:
+        x1, y1, x2, y2 = map(int, box)
+        crop = frame[y1:y2, x1:x2]
+        face_crops.append(crop)
+        out_boxes.append((x1, y1, x2, y2))
+
+    return face_crops, out_boxes
