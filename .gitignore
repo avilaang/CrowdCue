@@ -11,3 +11,6 @@ __pycache__/
 *.dylib
 *.pyc
 .env
+debug_crops/
+debug_crops_test/
+hf_cache/
