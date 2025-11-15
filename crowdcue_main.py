@@ -5,6 +5,7 @@ from models.emotion_model_loader import load_emotion_model, predict_emotion
 from models.engagement_utils import emotion_to_engagement
 from models.face_pose_detection import init_yolo_models, get_face_crops
 from models.overlay_utils import draw_label
+from models.simple_tracker import SimpleTracker
 
 
 def main():
@@ -14,11 +15,20 @@ def main():
 
     selection = int(input("Choose your HF token:\n1 = You\n2 = Friend 1\n3 = Friend 2\nEnter 1/2/3: "))
 
+    # Ask whether to enable debug (prints top-3 and saves low-conf crops)
+    dbg_input = input("Enable debug output and low-confidence crop saving? (y/N): ").strip().lower()
+    debug_mode = dbg_input == 'y'
+    debug_dir = 'debug_crops' if debug_mode else None
+
     # Load emotion model
     model, processor = load_emotion_model(device, selection)
 
     # Load YOLO models
     face_model, pose_model = init_yolo_models()
+
+    # Initialize a simple tracker for temporal smoothing
+    # Slightly more smoothing and a bit more tolerant IoU matching
+    tracker = SimpleTracker(iou_thresh=0.25, max_history=7, max_missing=8)
 
     cap = cv2.VideoCapture(0)
 
@@ -27,29 +37,33 @@ def main():
         if not ret:
             break
 
-        face_crops = get_face_crops(frame, face_model)
+        face_crops, boxes = get_face_crops(frame, face_model)
 
-        if len(face_crops) > 0:
-            # face_crops corresponds to detected boxes in same order; get boxes too
-            # We re-run detection with boxes to draw labels at correct positions
-            detections = face_model(frame)[0]
-            boxes = detections.boxes.xyxy.cpu().numpy() if detections.boxes is not None else []
+        preds = []
+        for crop in face_crops:
+            # predict_emotion now returns (label, prob)
+            label, prob = predict_emotion(model, processor, crop, device, debug=debug_mode, save_low_conf_dir=debug_dir)
+            # Apply per-class confidence thresholding before smoothing
+            from models.engagement_utils import apply_conf_threshold
+            adj_label, adj_prob = apply_conf_threshold(label, prob)
+            preds.append((adj_label, adj_prob))
 
-            for crop, box in zip(face_crops, boxes):
-                x1, y1, x2, y2 = map(int, box)
-                emotion, prob = predict_emotion(model, processor, crop, device)
-                engagement = emotion_to_engagement(emotion)
+        # Update tracker with current detections and predictions
+        tracks = tracker.update(boxes, preds)
 
-                label_text = f"{emotion} {prob:.2f} → {engagement}"
-                # choose color by engagement
-                color = (0, 200, 0) if engagement == "engaged" else (0, 200, 200) if engagement == "neutral" else (0, 100, 255)
+        # Draw tracks (smoothed labels/probs)
+        from models.overlay_utils import draw_confidence_bar
+        for tr in tracks:
+            x1, y1, x2, y2 = tr.box
+            sm_label = tr.majority_label() or "neutral"
+            sm_prob = tr.avg_prob()
+            engagement = emotion_to_engagement(sm_label)
+            label_text = f"{sm_label} {sm_prob:.2f} → {engagement}"
+            color = (0, 200, 0) if engagement == "engaged" else (0, 200, 200) if engagement == "neutral" else (0, 100, 255)
 
-                # Draw bounding box and label at top-left of the box
-                cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
-                draw_label(frame, label_text, x1 + 5, y1 - 5, color)
-                # Draw a small confidence bar under the label
-                from models.overlay_utils import draw_confidence_bar
-                draw_confidence_bar(frame, x1 + 5, y1 + 5, min(100, x2-x1), 8, prob, bar_color=color)
+            cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
+            draw_label(frame, label_text, x1 + 5, y1 - 5, color)
+            draw_confidence_bar(frame, x1 + 5, y1 + 5, min(100, x2 - x1), 8, sm_prob, bar_color=color)
 
         cv2.imshow("CrowdCue - Real-time Emotion + Engagement", frame)
 

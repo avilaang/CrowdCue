@@ -13,8 +13,11 @@ def get_face_crops(frame, face_model):
     boxes = detections.boxes.xyxy.cpu().numpy() if detections.boxes is not None else []
 
     face_crops = []
+    out_boxes = []
     for box in boxes:
         x1, y1, x2, y2 = map(int, box)
-        face_crops.append(frame[y1:y2, x1:x2])
+        crop = frame[y1:y2, x1:x2]
+        face_crops.append(crop)
+        out_boxes.append((x1, y1, x2, y2))
 
-    return face_crops
+    return face_crops, out_boxes
