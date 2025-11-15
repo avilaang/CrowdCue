@@ -1,54 +1,59 @@
 import cv2
 import torch
-from models.face_pose_detection import load_yolo_models
+
 from models.emotion_model_loader import load_emotion_model, predict_emotion
-from models.engagement_utils import map_emotion_to_engagement, interpret_pose
-from models.overlay_utils import draw_face_box
+from models.engagement_utils import emotion_to_engagement
+from models.face_pose_detection import init_yolo_models, get_face_crops
+from models.overlay_utils import draw_label
 
 
 def main():
-    device = "mps" if torch.backends.mps.is_available() else "cpu"
+
+    device = "cuda" if torch.cuda.is_available() else "cpu"
     print(f"Using device: {device}")
 
-    # --- choose token ---
-    selection = int(input("Choose your HuggingFace token:\n1 = AA\n2 = AZ\n3 = KX\nEnter 1/2/3: "))
+    selection = int(input("Choose your HF token:\n1 = You\n2 = Friend 1\n3 = Friend 2\nEnter 1/2/3: "))
 
-    # Load models
-    face_model, pose_model = load_yolo_models()
-    emotion_model, emotion_processor = load_emotion_model(device, selection)
+    # Load emotion model
+    model, processor = load_emotion_model(device, selection)
+
+    # Load YOLO models
+    face_model, pose_model = init_yolo_models()
 
     cap = cv2.VideoCapture(0)
 
     while True:
-        success, frame = cap.read()
-        if not success:
+        ret, frame = cap.read()
+        if not ret:
             break
 
-        # Face detection
-        face_results = face_model(frame)
-        pose_results = pose_model(frame)
+        face_crops = get_face_crops(frame, face_model)
 
-        for det in face_results[0].boxes:
-            x1, y1, x2, y2 = map(int, det.xyxy[0])
-            face_crop = frame[y1:y2, x1:x2]
+        if len(face_crops) > 0:
+            # face_crops corresponds to detected boxes in same order; get boxes too
+            # We re-run detection with boxes to draw labels at correct positions
+            detections = face_model(frame)[0]
+            boxes = detections.boxes.xyxy.cpu().numpy() if detections.boxes is not None else []
 
-            # Emotion
-            emotion = predict_emotion(emotion_model, emotion_processor, face_crop, device)
-            emotion_eng = map_emotion_to_engagement(emotion)
+            for crop, box in zip(face_crops, boxes):
+                x1, y1, x2, y2 = map(int, box)
+                emotion, prob = predict_emotion(model, processor, crop, device)
+                engagement = emotion_to_engagement(emotion)
 
-            draw_face_box(frame, (x1, y1, x2, y2), f"{emotion} → {emotion_eng}")
+                label_text = f"{emotion} {prob:.2f} → {engagement}"
+                # choose color by engagement
+                color = (0, 200, 0) if engagement == "engaged" else (0, 200, 200) if engagement == "neutral" else (0, 100, 255)
 
-        # Pose (optional)
-        if len(pose_results) > 0:
-            if len(pose_results[0].keypoints) > 0:
-                kp = pose_results[0].keypoints[0].data.cpu().numpy()
-                pose_state = interpret_pose(kp)
-                cv2.putText(frame, f"Pose: {pose_state}", (20, 40),
-                            cv2.FONT_HERSHEY_SIMPLEX, 1, (0,255,255), 2)
+                # Draw bounding box and label at top-left of the box
+                cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
+                draw_label(frame, label_text, x1 + 5, y1 - 5, color)
+                # Draw a small confidence bar under the label
+                from models.overlay_utils import draw_confidence_bar
+                draw_confidence_bar(frame, x1 + 5, y1 + 5, min(100, x2-x1), 8, prob, bar_color=color)
 
-        cv2.imshow("CrowdCue", frame)
+        cv2.imshow("CrowdCue - Real-time Emotion + Engagement", frame)
 
-        if cv2.waitKey(1) & 0xFF == 27:  # ESC
+        if cv2.waitKey(1) & 0xFF == 27:  # ESC key
             break
 
     cap.release()
