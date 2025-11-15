@@ -1,0 +1,10 @@
+ultralytics>=8.0
+opencv-python
+transformers>=4.36.0
+huggingface-hub
+accelerate
+python-dotenv
+numpy
+Pillow
+torch
+torchvision
