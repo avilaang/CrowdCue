@@ -19,7 +19,7 @@ def get_engagement_suggestions(slide_text: str, dominant_engagement: str = None)
     As an AI helper for a live presenter, provide:
     - 1 audience engagement idea (questions, polls, short and relevant joke, a surprising statistic or fact)
 
-    Keep the suggestions concise and naturally speakable and based on the audince state. Do not include any additional headings or how the audience is feeling.
+    Keep the suggestions 1 sentence and naturally speakable and based on the audince state. DO NOT include any other commentary.
     """
 
     response = model.generate_content(prompt)
