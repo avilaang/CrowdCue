@@ -297,6 +297,16 @@ subtitle_line2 = tk.Label(
 )
 subtitle_line2.pack(pady=(5, 0))
 
+# Third line with target emoji
+subtitle_line3 = tk.Label(
+    root,
+    text="🎯 PERSONALIZED PRESENTATION INSIGHTS",
+    font=("Optima", 12),
+    bg="#1a1a2e",
+    fg="#8a8a8a"  # Slightly darker gray
+)
+subtitle_line3.pack(pady=(2, 0))
+
 # Button with modern styling - subtle and elegant
 launch_button = tk.Button(
     root, 
