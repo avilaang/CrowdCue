@@ -266,9 +266,57 @@ def start():
 root = tk.Tk()
 root.title("CrowdCue")
 root.geometry("500x250")
-tk.Label(root, text="CrowdCue", font=("Optima", 36, "bold")).pack(pady=(30, 10))
-tk.Label(root, text="AI-Powered Insights That Elevate Every Presentation", font=("Optima", 14, "italic")).pack()
-tk.Button(root, text="Launch CrowdCue",font=("Optima", 14),borderwidth=5,command=start).pack(pady=20)
+root.configure(bg="#1a1a2e")  # Dark blue-gray background
+
+# Title with modern color
+title_label = tk.Label(
+    root, 
+    text="CrowdCue", 
+    font=("Optima", 36, "bold"),
+    bg="#1a1a2e",
+    fg="#4a90e2"  # Bright blue
+)
+title_label.pack(pady=(30, 10))
+
+# Subtitle with softer color
+subtitle_label = tk.Label(
+    root, 
+    text="AI-Powered Insights That Elevate Every Presentation", 
+    font=("Optima", 14, "italic"),
+    bg="#1a1a2e",
+    fg="#a0a0a0"  # Light gray
+)
+subtitle_label.pack()
+
+# Second line with emoji and varied font
+subtitle_line2 = tk.Label(
+    root,
+    text="📊 REAL-TIME ENGAGEMENT TRACKING",
+    font=("Optima", 12),
+    bg="#1a1a2e",
+    fg="#8a8a8a"  # Slightly darker gray
+)
+subtitle_line2.pack(pady=(5, 0))
+
+# Button with modern styling - subtle and elegant
+launch_button = tk.Button(
+    root, 
+    text="Launch CrowdCue",
+    font=("Optima", 14),
+    bg="#2d3a4e",  # Darker blue-gray, less contrasting
+    fg="#000000",  # Black text
+    activebackground="#3d4a5e",  # Slightly lighter on hover
+    activeforeground="#000000",
+    borderwidth=1,
+    relief="flat",
+    highlightthickness=1,
+    highlightbackground="#4a90e2",  # Subtle blue border
+    cursor="hand2",
+    command=start,
+    padx=25,
+    pady=10
+)
+launch_button.pack(pady=20)
 
 
 def on_closing():
