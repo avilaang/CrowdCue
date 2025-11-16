@@ -32,7 +32,6 @@ def continuous_analysis():
     except Exception as e:
         print(f"Error in continuous_analysis: {e}")
 
-    # Schedule this function to run again in 10 seconds
     root.after(10000, continuous_analysis)
 
 # --- Placeholders for dynamic data ---
