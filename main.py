@@ -21,13 +21,16 @@ def continuous_analysis():
         image = capture_screen()
         text = extract_text(image)
 
-        if text.strip():
-            current_ai_suggestions = get_engagement_suggestions(text)
+        dominant = None
+        if metrics_provider is not None:
+            dominant = metrics_provider.get_dominant_engagement()
+
+        if text.strip() or dominant:
+            current_ai_suggestions = get_engagement_suggestions(text, dominant_engagement=dominant)
         else:
             current_ai_suggestions = "No readable text detected."
-    except Exception:
-        # keep previous suggestions on error
-        pass
+    except Exception as e:
+        print(f"Error in continuous_analysis: {e}")
 
     # Schedule this function to run again in 10 seconds
     root.after(10000, continuous_analysis)
@@ -53,13 +56,13 @@ def get_dominant_engagement_suggestion(dominant: str) -> str:
 
 def get_suggested_action():
     """Get suggestion from dominant engagement label."""
-    if metrics_provider is None:
-        return current_ai_suggestions
-
-    # Get dominant engagement and map to suggestion
-    dominant = metrics_provider.get_dominant_engagement()
-    dominant_suggestion = get_dominant_engagement_suggestion(dominant)
-    return dominant_suggestion
+    if current_ai_suggestions and current_ai_suggestions.strip():
+        return current_ai_suggestions  # always prefer AI response
+    elif metrics_provider is not None:
+        dominant = metrics_provider.get_dominant_engagement()
+        return get_dominant_engagement_suggestion(dominant)
+    else:
+        return "Analyzing slide..."
 
 def get_audience_breakdown():
     if metrics_provider is None:
@@ -218,8 +221,8 @@ def start():
     except Exception as e:
         print(f"Warning: could not start detection engine: {e}")
 
-    continuous_analysis()
     show_overlays()
+    continuous_analysis()
 
 # --- Main Window ---
 
