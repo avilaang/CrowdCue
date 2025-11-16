@@ -6,6 +6,8 @@ from engagement_utils import emotion_to_engagement
 from face_pose_detection import init_yolo_models, get_face_crops
 from overlay_utils import draw_label
 from simple_tracker import SimpleTracker
+from crowd_engine import process_camera_frame, generate_combined_feedback
+
 
 def list_available_cameras(max_tested=5):
     available = []
@@ -46,6 +48,8 @@ def main():
     # Load YOLO models
     face_model, pose_model = init_yolo_models()
 
+    ocr_enabled = True   # EDIT: enable OCR integration
+
     # Initialize a simple tracker for temporal smoothing
     # Slightly more smoothing and a bit more tolerant IoU matching
     tracker = SimpleTracker(iou_thresh=0.25, max_history=7, max_missing=8)
@@ -79,14 +83,23 @@ def main():
             sm_prob = tr.avg_prob()
             engagement = emotion_to_engagement(sm_label)
             label_text = f"{sm_label} {sm_prob:.2f} → {engagement}"
-            color = (0, 200, 0) if engagement == "engaged" else (0, 200, 200) if engagement == "neutral" else (0, 100, 255)
+
+            # Explicit color mapping (BGR): engaged=green, neutral=yellow,
+            # confused=orange, bored=red
+            if engagement == "engaged":
+                color = (0, 200, 0)  # Green
+            elif engagement == "neutral":
+                color = (0, 255, 255)  # Yellow
+            elif engagement == "confused":
+                color = (0, 165, 255)  # Orange
+            else:  # bored / fallback
+                color = (0, 0, 255)  # Red
 
             cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
             draw_label(frame, label_text, x1 + 5, y1 - 5, color)
             draw_confidence_bar(frame, x1 + 5, y1 + 5, min(100, x2 - x1), 8, sm_prob, bar_color=color)
 
         cv2.imshow("CrowdCue - Real-time Emotion + Engagement", frame)
-
         if cv2.waitKey(1) & 0xFF == 27:  # ESC key
             break
 

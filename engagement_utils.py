@@ -7,8 +7,14 @@ def emotion_to_engagement(emotion):
     if emotion == "neutral":
         return "neutral"
 
-    if emotion in ["sad", "angry", "disgust", "fear"]:
+    # Map obviously negative emotions to 'bored'
+    if emotion in ["sad", "angry", "disgust"]:
         return "bored"
+
+    # 'fear' often indicates confusion/surprise in presentation contexts;
+    # map it to 'confused' so UI shows orange instead of red for fearful faces.
+    if emotion == "fear":
+        return "confused"
 
     return "neutral"
 
