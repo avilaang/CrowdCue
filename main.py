@@ -99,7 +99,9 @@ def show_overlays():
     label_font = font.Font(family="Avenir", size=11)
     suggestion_font = font.Font(family="Avenir", size=10)
 
-    tk.Label(overlay_topright, text="Live Insights", bg="black", fg="white", font=title_font).pack(anchor="w", padx=15, pady=(8, 0))
+    # Title label - make it the drag handle
+    title_label = tk.Label(overlay_topright, text="Live Insights", bg="black", fg="white", font=title_font, cursor="hand2")
+    title_label.pack(anchor="w", padx=15, pady=(8, 0))
     tk.Frame(overlay_topright, bg="white", height=1).pack(fill="x", padx=10, pady=(2, 10))
 
     f = tk.Frame(overlay_topright, bg="black")
@@ -123,9 +125,12 @@ def show_overlays():
         justify="left"
     )
     suggestion_label.pack(anchor="w", padx=18)
+    
+    # Make top right overlay draggable via title
+    make_draggable(overlay_topright, drag_widget=title_label)
 
     # --- Bottom Left Overlay ---
-    overlay2_width = 320
+    overlay2_width = 380  # Increased width to prevent cut-off
     overlay2_height = 170
     screen_height = root.winfo_screenheight()
     x2 = 0
@@ -138,11 +143,13 @@ def show_overlays():
     overlay_bottomleft.configure(bg="black")
     overlay_bottomleft.attributes('-alpha', 0.85)
 
-    tk.Label(overlay_bottomleft, text="Your Audience:", bg="black", fg="white", font=title_font).pack(anchor="w", padx=15, pady=(12, 2))
+    # Title label - make it the drag handle
+    title_label2 = tk.Label(overlay_bottomleft, text="Your Audience:", bg="black", fg="white", font=title_font, cursor="hand2")
+    title_label2.pack(anchor="w", padx=15, pady=(12, 2))
     tk.Frame(overlay_bottomleft, bg="white", height=1).pack(fill="x", padx=10, pady=(2, 14))
 
     data = get_audience_breakdown()
-    bar_width = 150  # px for 100%
+    bar_width = 140  # Slightly reduced bar width to make room for percentages
     
     global audience_bar_canvases, audience_percent_labels
     audience_bar_canvases = {}
@@ -150,15 +157,18 @@ def show_overlays():
 
     for label, percent in data.items():
         f = tk.Frame(overlay_bottomleft, bg="black")
-        f.pack(anchor="w", padx=20, pady=2)
-        tk.Label(f, text=f"{label}:", font=label_font, bg="black", fg="white", width=12, anchor='w').pack(side="left")  # fixed width label
+        f.pack(anchor="w", padx=18, pady=2)
+        tk.Label(f, text=f"{label}:", font=label_font, bg="black", fg="white", width=11, anchor='w').pack(side="left")  # Slightly reduced width
         canvas = tk.Canvas(f, width=bar_width, height=12, bg="black", highlightthickness=0)
-        canvas.pack(side="left", padx=(6, 6))
+        canvas.pack(side="left", padx=(5, 5))
         canvas.create_rectangle(0, 0, int(bar_width * percent / 100), 12, fill="#cfcfcf", width=0)
         audience_bar_canvases[label] = canvas
-        percent_label = tk.Label(f, text=f"{percent}%", font=label_font, bg="black", fg="white")
-        percent_label.pack(side="left")
+        percent_label = tk.Label(f, text=f"{percent}%", font=label_font, bg="black", fg="white", width=5, anchor='e')
+        percent_label.pack(side="left", padx=(0, 5))
         audience_percent_labels[label] = percent_label
+    
+    # Make bottom left overlay draggable via title
+    make_draggable(overlay_bottomleft, drag_widget=title_label2)
 
     keep_on_top(overlay_bottomleft)
     keep_on_top(overlay_topright)
@@ -186,7 +196,7 @@ def update_audience_bars():
     try:
         if audience_bar_canvases and audience_percent_labels and len(audience_bar_canvases) > 0:
             data = get_audience_breakdown()
-            bar_width = 150  # px for 100%
+            bar_width = 140  # px for 100% - matches the width used in show_overlays()
             
             for label, percent in data.items():
                 if label in audience_bar_canvases and label in audience_percent_labels:
@@ -203,6 +213,33 @@ def update_audience_bars():
             list(audience_bar_canvases.values())[0].after(1000, update_audience_bars)
     except (NameError, AttributeError, KeyError, IndexError):
         pass
+
+def make_draggable(window, drag_widget=None):
+    """Make a window draggable by clicking and dragging.
+    
+    Args:
+        window: The window to make draggable
+        drag_widget: Optional widget to use as drag handle (defaults to entire window)
+    """
+    def start_drag(event):
+        window._drag_start_x = event.x_root - window.winfo_x()
+        window._drag_start_y = event.y_root - window.winfo_y()
+    
+    def on_drag(event):
+        x = event.x_root - window._drag_start_x
+        y = event.y_root - window._drag_start_y
+        window.geometry(f"+{x}+{y}")
+    
+    # Bind to the drag widget or the entire window
+    target = drag_widget if drag_widget else window
+    target.bind("<Button-1>", start_drag)
+    target.bind("<B1-Motion>", on_drag)
+    
+    # Change cursor to indicate draggability
+    if drag_widget:
+        drag_widget.config(cursor="hand2")
+    else:
+        window.config(cursor="hand2")
 
 def keep_on_top(window):
     window.attributes('-topmost', True)
